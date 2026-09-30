@@ -3,31 +3,53 @@
 import JsBarcode from "jsbarcode";
 
 export const receipt = {
-  height: 1080, // 240–2000 px. Width is fixed by the printer.
+  height: 810, // 240–2000 px. Width is fixed by the printer.
   seed: 67,
 };
 
-// everything here is editable. play around or rm -rf and see what you come up with!
 export function drawReceipt(p) {
   const { width: w, height: h } = p;
   const margin = 24;
+  p.background(255);
 
   // Header
   p.noStroke();
   p.fill(0);
-    p.textFont("monospace");
-    p.textAlign(p.CENTER, p.TOP);
-    p.textStyle(p.BOLD);
-    p.textSize(28);
-    p.text("NIGHT SIGNALS", w / 2, 30);
+  p.textFont("monospace");
+  p.textAlign(p.CENTER, p.TOP);
+  p.textStyle(p.BOLD);
+  p.textSize(28);
+  p.text("FRACTAL CANOPY NIGHT", w / 2, 30);
 
-  dashedLine(p, margin, 94, w - margin, 94, 6, 5);
+  dashedLine(p, margin, 75, w - margin, 75, 6, 5);
 
-  // A seeded field of tiny stars and radio noise.
+  // tree
+  p.stroke(0);
+
+  p.push();
+  p.translate(w / 2, 650);
+
+  branch(100, p);
+  p.pop();
+
+  // moon
+  p.push();
+  p.stroke(0);
+  p.fill(0);
+  p.circle(w / 3, 200, 100);
+
+  p.fill(255);
+  p.stroke(255);
+  p.circle(w / 3 + 30, 200, 100);
+  p.pop();
+
+  // A seeded field of tiny stars and radio noise. (I stole this from kartikey)
   for (let i = 0; i < 150; i += 1) {
     const x = p.random(margin, w - margin);
-    const y = p.random(118, 350);
+    const y = p.random(100, 600);
     const size = p.random([1, 1, 1, 2, 2, 3]);
+    const d = p.dist(x, y, w / 3, 200);
+    if (d > 50) {
     if (p.random() > 0.82) {
       p.rect(x - 3, y, 7, 1);
       p.rect(x, y - 3, 1, 7);
@@ -35,58 +57,56 @@ export function drawReceipt(p) {
       p.rect(x, y, size, size);
     }
   }
+}
 
-  // Layered mountain signals. p.noise() and p.random() are both seeded.
-  const ridgeTop = 300;
-  for (let layer = 0; layer < 5; layer += 1) {
+  // stole this too
+  const ridgeTop = 650;
+  for (let layer = 0; layer < 1; layer += 1) {
     p.fill(layer % 2 === 0 ? 0 : 255);
     p.stroke(0);
     p.strokeWeight(2);
     p.beginShape();
-    p.vertex(margin, 500 + layer * 48);
+    p.vertex(margin, 700 + layer * 48);
     for (let x = margin; x <= w - margin; x += 5) {
       const wave = p.noise(x * 0.012, layer * 4.2) * 90;
       const y = ridgeTop + layer * 50 - wave;
       p.vertex(x, y);
     }
-    p.vertex(w - margin, 500 + layer * 48);
+    p.vertex(w - margin, 700 + layer * 48);
     p.endShape(p.CLOSE);
   }
 
-  // The transmission: a winding route with little station markers.
-  p.noFill();
-  p.stroke(0);
-  p.strokeWeight(5);
-  p.beginShape();
-  const route = [];
-  for (let y = 585; y < 915; y += 34) {
-    const x = p.map(p.noise(y * 0.018, 20), 0, 1, 68, w - 68);
-    route.push({ x, y });
-    p.vertex(x, y);
-  }
-  p.endShape();
+  dashedLine(p, margin, 710, w - margin, 710, 6, 5); // higher?
 
-  p.strokeWeight(2);
-  p.fill(255);
-  route.forEach(({ x, y }, index) => {
-    if (index % 2 === 0) {
-      p.square(x - 6, y - 6, 12);
-      p.line(index % 4 === 0 ? margin : w - margin, y, x, y);
-    }
-  });
-
-  dashedLine(p, margin, 930, w - margin, 930, 6, 5);
-
-  const barcodeValue = "receipt.hackclub.com";
-  drawBarcode(p, barcodeValue, w / 2, 960);
+  const barcodeValue = "https://matthiaz.dev";
+  drawBarcode(p, barcodeValue, w / 2, 720);
 
   p.noStroke();
   p.fill(0);
   p.textFont("monospace");
   p.textAlign(p.CENTER, p.TOP);
-  p.textStyle(p.NORMAL);
-  p.textSize(10);
-  p.text(barcodeValue, w / 2, 1024);
+  p.textStyle(p.BOLD);
+  p.textSize(13);
+  p.text("receipt.hackclub.com", w / 2, 780);
+}
+
+function branch(len, p) {
+  p.line(0, 0, 0, -len);
+  //p.translate(0, -len);
+
+  if (len > 4) {
+    p.push();
+    p.translate(0, -len);
+    p.rotate(p.PI / 6);
+    branch(len * 0.67, p);
+    p.pop();
+
+    p.push();
+    p.translate(0, -len);
+    p.rotate(-p.PI / 6);
+    branch(len * 0.67, p);
+    p.pop();
+  }
 }
 
 function drawBarcode(p, value, centerX, y) {
@@ -112,3 +132,4 @@ function dashedLine(p, x1, y1, x2, y2, dash, gap) {
     p.line(x, y1, Math.min(x + dash, x2), y2);
   }
 }
+
